@@ -58,9 +58,14 @@ func hiveQuery(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("Hive failed, retrying in 30 seconds")
 		time.Sleep(time.Duration(30) * time.Second)
-		out, _ = runHive(query, r)
+		out, err = runHive(query, r)
 	}
-	fmt.Fprintf(w, "%s", out)
+	if err != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "%s", err.Error())
+	} else {
+		fmt.Fprintf(w, "%s", out)
+	}
 }
 
 func crc32String(s string) string {
@@ -70,7 +75,7 @@ func crc32String(s string) string {
 func runHive(query string, r *http.Request) (result []byte, err error) {
 	log.Printf("Hive Query: %s\n", query)
 	cmd := exec.Command("hive", "-e", query)
-	result, err := cmd.Output()
+	result, err = cmd.Output()
 	if err != nil {
 		logSentry(err, r)
 	}
